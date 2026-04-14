@@ -5,416 +5,509 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard HADASSA IA</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { background: #000; }
+    body { background: #030712; }
+    .card { background: rgba(24,24,27,.9); border: 1px solid rgba(255,255,255,.08); }
+    .muted { color: #a1a1aa; }
+    .grid-auto { display:grid; gap:1rem; }
+    @media (min-width: 768px) { .grid-2 { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (min-width: 1280px) { .grid-3 { grid-template-columns: repeat(3,minmax(0,1fr)); } .grid-2-xl { grid-template-columns: repeat(2,minmax(0,1fr)); } }
   </style>
 </head>
-<body>
-  <div id="root"></div>
+<body class="text-white">
+  <div class="mx-auto max-w-7xl p-4 md:p-6">
+    <section class="mb-6 rounded-[28px] border border-white/10 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-5 shadow-2xl">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div class="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300">
+            Online e sincronizado
+          </div>
+          <h1 class="text-2xl font-semibold md:text-4xl">Dashboard HADASSA IA</h1>
+          <p class="mt-2 max-w-2xl text-sm text-zinc-400 md:text-base">
+            Centro operacional para clientes, contas, licenças, performance, filtros inteligentes e regime de mercado.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="muted text-sm">FLT02</div>
+            <p id="heroMode" class="mt-2 font-semibold">AUTO / NORMAL</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="muted text-sm">Ativo foco</div>
+            <p id="heroAsset" class="mt-2 font-semibold">XAUUSD M1</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="muted text-sm">Regime</div>
+            <p id="heroRegime" class="mt-2 font-semibold">Tendência</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="muted text-sm">Última sync</div>
+            <p id="heroSync" class="mt-2 font-semibold">Agora</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-center gap-3">
+        <span id="statusBadge" class="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">Conectando</span>
+        <span id="statusText">Preparando dashboard...</span>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnRefresh" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 hover:bg-white/10">Atualizar</button>
+      </div>
+    </section>
+
+    <section class="mb-6 flex flex-wrap gap-2">
+      <button class="tabBtn rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300" data-tab="overview">Visão Geral</button>
+      <button class="tabBtn rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300" data-tab="admin">Admin</button>
+      <button class="tabBtn rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300" data-tab="clients">Clientes</button>
+      <button class="tabBtn rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300" data-tab="events">Eventos</button>
+    </section>
+
+    <section id="tab-overview" class="tabContent space-y-4">
+      <div id="summaryCards" class="grid-auto md:grid-cols-2 xl:grid-cols-3"></div>
+
+      <div class="grid-auto xl:grid-cols-3">
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-base font-semibold text-white">Curva de Resultado</h3>
+              <p class="text-sm text-zinc-400">Evolução semanal consolidada</p>
+            </div>
+            <span id="modeBadge" class="inline-flex items-center rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-xs text-sky-300">NORMAL</span>
+          </div>
+          <div class="h-72"><canvas id="equityChart"></canvas></div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Performance por Ativo</h3>
+            <p class="text-sm text-zinc-400">Takes x Stops por símbolo</p>
+          </div>
+          <div class="h-72"><canvas id="assetChart"></canvas></div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Sessões Mais Lucrativas</h3>
+            <p class="text-sm text-zinc-400">Participação por janela de operação</p>
+          </div>
+          <div class="h-72"><canvas id="sessionChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-auto xl:grid-cols-2">
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Regime de Mercado</h3>
+            <p class="text-sm text-zinc-400">Leitura atual do FLT04 PRO</p>
+          </div>
+          <div class="h-72"><canvas id="regimeChart"></canvas></div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Eventos Recentes</h3>
+            <p class="text-sm text-zinc-400">Fluxo em tempo real do MT5</p>
+          </div>
+          <div id="recentEvents" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-admin" class="tabContent hidden">
+      <div class="grid-auto xl:grid-cols-3">
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Controle Global</h3>
+            <p class="text-sm text-zinc-400">Leitura central do ecossistema HADASSA</p>
+          </div>
+          <div class="space-y-3 text-sm text-zinc-300">
+            <div class="flex items-center justify-between rounded-2xl bg-white/5 p-3"><span>Modo recomendado</span><span id="adminMode" class="rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-1 text-xs text-sky-300">NORMAL</span></div>
+            <div class="flex items-center justify-between rounded-2xl bg-white/5 p-3"><span>FLT04</span><span class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300">PRO COMPLETO</span></div>
+            <div class="flex items-center justify-between rounded-2xl bg-white/5 p-3"><span>Clientes online</span><span id="adminClientsOnline" class="font-semibold text-white">0</span></div>
+            <div class="flex items-center justify-between rounded-2xl bg-white/5 p-3"><span>Licenças OK</span><span id="adminLicencas" class="font-semibold text-white">0</span></div>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Ações Administrativas</h3>
+            <p class="text-sm text-zinc-400">Base para conexão com Apps Script</p>
+          </div>
+          <div class="grid gap-3">
+            <button class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-zinc-200 hover:bg-white/10">Atualizar Dashboard</button>
+            <button class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-zinc-200 hover:bg-white/10">Sincronizar Modos</button>
+            <button class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-zinc-200 hover:bg-white/10">Exportar Resumo</button>
+            <button class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-zinc-200 hover:bg-white/10">Verificar Bots</button>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Integração Apps Script</h3>
+            <p class="text-sm text-zinc-400">Endpoints do dashboard</p>
+          </div>
+          <div class="space-y-3 text-sm">
+            <div class="rounded-2xl bg-zinc-950 p-3 text-zinc-300">
+              <p class="text-xs uppercase tracking-wide text-zinc-500">URL base</p>
+              <p class="mt-1 break-all text-zinc-200" id="appsScriptUrlText"></p>
+            </div>
+            <div class="rounded-2xl bg-zinc-950 p-3 text-zinc-300">
+              <p class="text-xs uppercase tracking-wide text-zinc-500">Resumo</p>
+              <p class="mt-1 break-all text-zinc-200">?view=summary</p>
+            </div>
+            <div class="rounded-2xl bg-zinc-950 p-3 text-zinc-300">
+              <p class="text-xs uppercase tracking-wide text-zinc-500">Clientes / Eventos / Modo</p>
+              <p class="mt-1 break-all text-zinc-200">?view=clients | ?view=events | ?view=mode</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-clients" class="tabContent hidden">
+      <div class="card rounded-2xl p-4 shadow-xl">
+        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 class="text-base font-semibold text-white">Clientes e Contas</h3>
+            <p class="text-sm text-zinc-400">Visão individual por conta operando o robô</p>
+          </div>
+          <input id="clientSearch" placeholder="Buscar cliente, conta ou ativo" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-500" />
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-sm">
+            <thead class="text-zinc-400">
+              <tr class="border-b border-white/10">
+                <th class="px-3 py-3 font-medium">Cliente</th>
+                <th class="px-3 py-3 font-medium">Conta</th>
+                <th class="px-3 py-3 font-medium">Ativo</th>
+                <th class="px-3 py-3 font-medium">TF</th>
+                <th class="px-3 py-3 font-medium">Modo</th>
+                <th class="px-3 py-3 font-medium">PnL</th>
+                <th class="px-3 py-3 font-medium">Licença</th>
+                <th class="px-3 py-3 font-medium">Bot</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTable" class="text-zinc-200"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-events" class="tabContent hidden">
+      <div class="card rounded-2xl p-4 shadow-xl">
+        <div class="mb-4">
+          <h3 class="text-base font-semibold text-white">Feed de Eventos</h3>
+          <p class="text-sm text-zinc-400">Base para monitoramento operacional em tempo real</p>
+        </div>
+        <div id="eventsGrid" class="grid gap-3 lg:grid-cols-2"></div>
+      </div>
+    </section>
+  </div>
 
   <script>
-    const { useEffect, useMemo, useState } = React;
-    const {
-      ResponsiveContainer,
-      LineChart,
-      Line,
-      CartesianGrid,
-      XAxis,
-      YAxis,
-      Tooltip,
-      BarChart,
-      Bar,
-      PieChart,
-      Pie,
-      Cell,
-      AreaChart,
-      Area,
-    } = Recharts;
-
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2Ej67k0iDsfXFbNeWIDa-4VvV5eZXn_QwS7bOAm40Fb-tU3oKaqMCdgd2mHjI0S_K/exec";
 
-    const fallbackSummaryCards = [
-      { title: "Lucro do Dia", value: "$ 1,284.40", change: "+6.2%" },
-      { title: "Win Rate", value: "68.4%", change: "+2.1%" },
-      { title: "Takes", value: "42", change: "+8 hoje" },
-      { title: "Stops", value: "19", change: "-2 hoje" },
-      { title: "Clientes Ativos", value: "27", change: "24 online" },
-      { title: "Licenças OK", value: "31", change: "2 expiram hoje" },
-    ];
+    const fallbackSummary = {
+      lucroDia: 1284.4,
+      operacoesDia: 14,
+      winRate: 68.4,
+      wins: 42,
+      winsHoje: 8,
+      stops: 19,
+      stopsHoje: 2,
+      clientesAtivos: 27,
+      botsOnline: 24,
+      licencasOk: 31,
+      expiramHoje: 2,
+    };
 
-    const equityData = [
-      { name: "Seg", value: 220 },
-      { name: "Ter", value: 430 },
-      { name: "Qua", value: 510 },
-      { name: "Qui", value: 780 },
-      { name: "Sex", value: 910 },
-      { name: "Sáb", value: 1200 },
-      { name: "Dom", value: 1284 },
-    ];
-
-    const assetsData = [
-      { name: "XAUUSD", takes: 18, stops: 7 },
-      { name: "BTCUSD", takes: 12, stops: 5 },
-      { name: "USDJPY", takes: 8, stops: 4 },
-      { name: "EURUSD", takes: 4, stops: 3 },
-    ];
-
-    const sessionData = [
-      { name: "Londres", value: 46 },
-      { name: "NY", value: 34 },
-      { name: "Ásia", value: 12 },
-      { name: "Hora extra", value: 8 },
-    ];
-
-    const regimeData = [
-      { name: "Tendência", value: 61 },
-      { name: "Range", value: 24 },
-      { name: "Transição", value: 15 },
+    const fallbackEvents = [
+      { time: "19:08", conta: "510051524", evento: "TAKE", ativo: "XAUUSD", detalhe: "FLT02 NORMAL | FLT04 PRO", resultado_financeiro: 74.2 },
+      { time: "19:02", conta: "510051525", evento: "NOVO_CICLO", ativo: "BTCUSD", detalhe: "Sessão automática iniciada", resultado_financeiro: 0 },
+      { time: "18:57", conta: "510051524", evento: "FILTRO_FLT04", ativo: "XAUUSD", detalhe: "Range detectado, entrada bloqueada", resultado_financeiro: 0 },
+      { time: "18:51", conta: "510051526", evento: "STOP", ativo: "USDJPY", detalhe: "TooDeep limit expirou", resultado_financeiro: -22.9 },
     ];
 
     const fallbackClients = [
-      { id: "CLI-001", name: "Feliphe Israel", account: "510051524", asset: "XAUUSD", timeframe: "M1", mode: "NORMAL", pnl: "+$ 384.22", license: "ATIVA", bot: "ONLINE" },
-      { id: "CLI-002", name: "Mesa Alpha", account: "510051525", asset: "BTCUSD", timeframe: "M1", mode: "AGRESSIVO", pnl: "+$ 191.40", license: "ATIVA", bot: "ONLINE" },
-      { id: "CLI-003", name: "Conta Teste", account: "510051526", asset: "USDJPY", timeframe: "M5", mode: "CONSERVADOR", pnl: "-$ 42.10", license: "EXPIRA HOJE", bot: "OFFLINE" },
+      { id: "CLI-001", nome: "Feliphe Israel", conta: "510051524", ativo: "XAUUSD", tf: "M1", modo: "NORMAL", resultado: 384.22, licenca: "ATIVA", status: "ONLINE" },
+      { id: "CLI-002", nome: "Mesa Alpha", conta: "510051525", ativo: "BTCUSD", tf: "M1", modo: "AGRESSIVO", resultado: 191.4, licenca: "ATIVA", status: "ONLINE" },
+      { id: "CLI-003", nome: "Conta Teste", conta: "510051526", ativo: "USDJPY", tf: "M5", modo: "CONSERVADOR", resultado: -42.1, licenca: "EXPIRA HOJE", status: "OFFLINE" },
     ];
 
-    const fallbackRecentEvents = [
-      { time: "19:08", account: "510051524", event: "TAKE", symbol: "XAUUSD", detail: "FLT02 NORMAL | FLT04 PRO", result: "+$ 74.20" },
-      { time: "19:02", account: "510051525", event: "NOVO_CICLO", symbol: "BTCUSD", detail: "Sessão automática iniciada", result: "—" },
-      { time: "18:57", account: "510051524", event: "FILTRO_FLT04", symbol: "XAUUSD", detail: "Range detectado, entrada bloqueada", result: "—" },
-      { time: "18:51", account: "510051526", event: "STOP", symbol: "USDJPY", detail: "TooDeep limit expirou", result: "-$ 22.90" },
-    ];
+    const fallbackMode = "NORMAL";
+    const sessionData = [46, 34, 12, 8];
+    const sessionLabels = ["Londres", "NY", "Ásia", "Hora extra"];
+    const regimeData = [61, 24, 15];
+    const regimeLabels = ["Tendência", "Range", "Transição"];
 
-    const colorPool = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
+    let state = {
+      summary: fallbackSummary,
+      events: fallbackEvents,
+      clients: fallbackClients,
+      mode: fallbackMode,
+    };
+
+    let charts = {};
 
     function formatMoney(value) {
       const num = Number(value || 0);
-      return new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 2,
-      }).format(num);
+      return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(num);
     }
 
-    function buildSummaryCards(summary) {
-      if (!summary) return fallbackSummaryCards;
-      return [
-        { title: "Lucro do Dia", value: formatMoney(summary.lucroDia), change: `${summary.operacoesDia || 0} ops` },
-        { title: "Win Rate", value: `${summary.winRate || 0}%`, change: `${summary.wins || 0} takes` },
-        { title: "Takes", value: String(summary.wins || 0), change: `${summary.winsHoje || 0} hoje` },
-        { title: "Stops", value: String(summary.stops || 0), change: `${summary.stopsHoje || 0} hoje` },
-        { title: "Clientes Ativos", value: String(summary.clientesAtivos || 0), change: `${summary.botsOnline || 0} online` },
-        { title: "Licenças OK", value: String(summary.licencasOk || 0), change: `${summary.expiramHoje || 0} expiram hoje` },
+    function badgeHtml(text, tone = "blue") {
+      const tones = {
+        blue: "border-sky-500/20 bg-sky-500/10 text-sky-300",
+        green: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+        yellow: "border-amber-500/20 bg-amber-500/10 text-amber-300",
+        red: "border-rose-500/20 bg-rose-500/10 text-rose-300",
+        gray: "border-white/10 bg-white/5 text-zinc-200",
+      };
+      return `<span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs ${tones[tone] || tones.gray}">${text}</span>`;
+    }
+
+    function setStatus(kind, text) {
+      const badge = document.getElementById("statusBadge");
+      const statusText = document.getElementById("statusText");
+      badge.className = "inline-flex items-center rounded-full border px-2.5 py-1 text-xs";
+      if (kind === "ok") {
+        badge.classList.add("border-emerald-500/20", "bg-emerald-500/10", "text-emerald-300");
+        badge.textContent = "Conectado";
+      } else if (kind === "warn") {
+        badge.classList.add("border-amber-500/20", "bg-amber-500/10", "text-amber-300");
+        badge.textContent = "Parcial";
+      } else {
+        badge.classList.add("border-rose-500/20", "bg-rose-500/10", "text-rose-300");
+        badge.textContent = "Sem conexão";
+      }
+      statusText.textContent = text;
+    }
+
+    function renderSummaryCards() {
+      const cards = [
+        { title: "Lucro do Dia", value: formatMoney(state.summary.lucroDia), change: `${state.summary.operacoesDia || 0} ops` },
+        { title: "Win Rate", value: `${state.summary.winRate || 0}%`, change: `${state.summary.wins || 0} takes` },
+        { title: "Takes", value: String(state.summary.wins || 0), change: `${state.summary.winsHoje || 0} hoje` },
+        { title: "Stops", value: String(state.summary.stops || 0), change: `${state.summary.stopsHoje || 0} hoje` },
+        { title: "Clientes Ativos", value: String(state.summary.clientesAtivos || 0), change: `${state.summary.botsOnline || 0} online` },
+        { title: "Licenças OK", value: String(state.summary.licencasOk || 0), change: `${state.summary.expiramHoje || 0} expiram hoje` },
       ];
+
+      document.getElementById("summaryCards").innerHTML = cards.map(item => `
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <p class="text-xs uppercase tracking-wide text-zinc-400">${item.title}</p>
+          <p class="mt-2 text-2xl font-semibold text-white">${item.value}</p>
+          <p class="mt-1 text-sm text-emerald-400">${item.change}</p>
+        </div>
+      `).join("");
     }
 
-    function parseMaybeJson(txt) {
+    function renderEvents() {
+      const recent = state.events.slice(0, 20);
+      document.getElementById("recentEvents").innerHTML = recent.map(item => `
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-medium text-white">${item.evento || item.event || "EVENTO"}</p>
+                ${badgeHtml(item.ativo || item.symbol || "", "blue")}
+              </div>
+              <p class="text-xs text-zinc-400">${item.time || "--:--"} · Conta ${item.conta || item.account || ""}</p>
+              <p class="mt-1 text-sm text-zinc-300">${item.detalhe || item.detail || "Sem detalhe"}</p>
+            </div>
+            <p class="text-sm font-semibold text-white">${formatMoney(item.resultado_financeiro || item.result || 0)}</p>
+          </div>
+        </div>
+      `).join("");
+
+      document.getElementById("eventsGrid").innerHTML = recent.map(item => `
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div class="mb-2 flex items-center justify-between gap-3">
+            ${badgeHtml(item.evento || item.event || "EVENTO", "blue")}
+            <span class="text-xs text-zinc-500">${item.time || "--:--"}</span>
+          </div>
+          <p class="text-sm font-semibold text-white">${item.ativo || item.symbol || ""}</p>
+          <p class="text-sm text-zinc-300">${item.detalhe || item.detail || "Sem detalhe"}</p>
+          <p class="mt-2 text-xs text-zinc-500">Conta ${item.conta || item.account || ""}</p>
+          <p class="mt-3 text-sm font-semibold text-white">${formatMoney(item.resultado_financeiro || item.result || 0)}</p>
+        </div>
+      `).join("");
+    }
+
+    function renderClients() {
+      const term = (document.getElementById("clientSearch").value || "").toLowerCase();
+      const filtered = state.clients.filter(c =>
+        String(c.nome || c.name || "").toLowerCase().includes(term) ||
+        String(c.conta || c.account || "").includes(term) ||
+        String(c.ativo || c.asset || "").toLowerCase().includes(term)
+      );
+
+      document.getElementById("clientsTable").innerHTML = filtered.map((c, idx) => `
+        <tr class="border-b border-white/5 text-zinc-200">
+          <td class="px-3 py-3">
+            <div>
+              <p class="font-medium text-white">${c.nome || c.name || "Cliente"}</p>
+              <p class="text-xs text-zinc-500">${c.id || `CLI-${String(idx+1).padStart(3, "0")}`}</p>
+            </div>
+          </td>
+          <td class="px-3 py-3">${c.conta || c.account || ""}</td>
+          <td class="px-3 py-3">${c.ativo || c.asset || ""}</td>
+          <td class="px-3 py-3">${c.tf || c.timeframe || ""}</td>
+          <td class="px-3 py-3">${badgeHtml(c.modo || c.mode || "NORMAL", "blue")}</td>
+          <td class="px-3 py-3">${formatMoney(c.resultado || c.pnl || 0)}</td>
+          <td class="px-3 py-3">${badgeHtml(c.licenca || c.license || "ATIVA", (c.licenca || c.license) === "ATIVA" ? "green" : "yellow")}</td>
+          <td class="px-3 py-3">${badgeHtml(c.status || c.bot || "ONLINE", (c.status || c.bot) === "ONLINE" ? "green" : "red")}</td>
+        </tr>
+      `).join("");
+    }
+
+    function buildCharts() {
+      const takes = {};
+      const stops = {};
+      state.events.forEach(e => {
+        const ativo = e.ativo || e.symbol || "OUTRO";
+        const evento = String(e.evento || e.event || "").toUpperCase();
+        if (!(ativo in takes)) { takes[ativo] = 0; stops[ativo] = 0; }
+        if (evento === "TAKE") takes[ativo]++;
+        if (evento === "STOP") stops[ativo]++;
+      });
+      const assetLabels = Object.keys(takes).length ? Object.keys(takes) : ["XAUUSD","BTCUSD","USDJPY","EURUSD"];
+      const takesData = assetLabels.map(a => takes[a] || ({XAUUSD:18,BTCUSD:12,USDJPY:8,EURUSD:4}[a] || 0));
+      const stopsData = assetLabels.map(a => stops[a] || ({XAUUSD:7,BTCUSD:5,USDJPY:4,EURUSD:3}[a] || 0));
+
+      const weekly = [220,430,510,780,910,1200,Number(state.summary.lucroDia || 1284)];
+
+      if (charts.equity) charts.equity.destroy();
+      charts.equity = new Chart(document.getElementById("equityChart"), {
+        type: "line",
+        data: {
+          labels: ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"],
+          datasets: [{ label: "Resultado", data: weekly, borderColor: "#22c55e", backgroundColor: "rgba(34,197,94,.12)", fill: true, tension: .35 }]
+        },
+        options: darkOptions()
+      });
+
+      if (charts.asset) charts.asset.destroy();
+      charts.asset = new Chart(document.getElementById("assetChart"), {
+        type: "bar",
+        data: {
+          labels: assetLabels,
+          datasets: [
+            { label: "Takes", data: takesData, backgroundColor: "#22c55e" },
+            { label: "Stops", data: stopsData, backgroundColor: "#ef4444" }
+          ]
+        },
+        options: darkOptions()
+      });
+
+      if (charts.session) charts.session.destroy();
+      charts.session = new Chart(document.getElementById("sessionChart"), {
+        type: "doughnut",
+        data: {
+          labels: sessionLabels,
+          datasets: [{ data: sessionData, backgroundColor: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] }]
+        },
+        options: darkOptions(true)
+      });
+
+      if (charts.regime) charts.regime.destroy();
+      charts.regime = new Chart(document.getElementById("regimeChart"), {
+        type: "line",
+        data: {
+          labels: regimeLabels,
+          datasets: [{ label: "Regime", data: regimeData, borderColor: "#3b82f6", backgroundColor: "rgba(59,130,246,.12)", fill: true, tension: .35 }]
+        },
+        options: darkOptions()
+      });
+    }
+
+    function darkOptions(radial = false) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: "#e4e4e7" } },
+          tooltip: { enabled: true }
+        },
+        scales: radial ? {} : {
+          x: { ticks: { color: "#a1a1aa" }, grid: { color: "rgba(255,255,255,.08)" } },
+          y: { ticks: { color: "#a1a1aa" }, grid: { color: "rgba(255,255,255,.08)" } }
+        }
+      };
+    }
+
+    function applyHero() {
+      document.getElementById("heroMode").textContent = `AUTO / ${state.mode}`;
+      document.getElementById("modeBadge").textContent = state.mode;
+      document.getElementById("adminMode").textContent = state.mode;
+      document.getElementById("heroSync").textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      document.getElementById("appsScriptUrlText").textContent = APPS_SCRIPT_URL;
+      document.getElementById("adminClientsOnline").textContent = state.summary.botsOnline || 0;
+      document.getElementById("adminLicencas").textContent = state.summary.licencasOk || 0;
+
+      const firstClient = state.clients[0];
+      if (firstClient) document.getElementById("heroAsset").textContent = `${firstClient.ativo || firstClient.asset || "XAUUSD"} ${firstClient.tf || firstClient.timeframe || "M1"}`;
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Falha na consulta");
+      const txt = await res.text();
       try { return JSON.parse(txt); } catch { return txt; }
     }
 
-    function normalizeEvents(events) {
-      return (events || []).map((item) => ({
-        time: item.time || item.hora || "--:--",
-        account: item.account || item.conta || "",
-        event: item.event || item.evento || "EVENTO",
-        symbol: item.symbol || item.ativo || "",
-        detail: item.detail || item.detalhe || item.obs || "Sem detalhe",
-        result: item.result || item.resultado || (item.resultado_financeiro ? formatMoney(item.resultado_financeiro) : "—"),
-      }));
-    }
+    async function loadData() {
+      try {
+        setStatus("warn", "Carregando dados do Apps Script...");
+        const [summary, events, clients, mode] = await Promise.all([
+          fetchJson(`${APPS_SCRIPT_URL}?view=summary`),
+          fetchJson(`${APPS_SCRIPT_URL}?view=events`),
+          fetchJson(`${APPS_SCRIPT_URL}?view=clients`),
+          fetchJson(`${APPS_SCRIPT_URL}?view=mode`),
+        ]);
 
-    function normalizeClients(items) {
-      return (items || []).map((item, index) => ({
-        id: item.id || `CLI-${String(index + 1).padStart(3, "0")}`,
-        name: item.name || item.nome || "Cliente",
-        account: item.account || item.conta || "",
-        asset: item.asset || item.ativo || "",
-        timeframe: item.timeframe || item.tf || "",
-        mode: item.mode || item.modo || "NORMAL",
-        pnl: item.pnl || (item.resultado != null ? formatMoney(item.resultado) : "—"),
-        license: item.license || item.licenca || "ATIVA",
-        bot: item.bot || item.status || "ONLINE",
-      }));
-    }
+        if (summary && typeof summary === "object") state.summary = summary;
+        if (Array.isArray(events) && events.length) state.events = events;
+        if (Array.isArray(clients) && clients.length) state.clients = clients;
+        if (typeof mode === "string" && mode.trim()) state.mode = mode.trim();
 
-    function Badge({ children, tone = "default" }) {
-      const tones = {
-        default: "bg-white/5 text-zinc-200 border-white/10",
-        green: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-        yellow: "bg-amber-500/10 text-amber-300 border-amber-500/20",
-        red: "bg-rose-500/10 text-rose-300 border-rose-500/20",
-        blue: "bg-sky-500/10 text-sky-300 border-sky-500/20",
-      };
-      return React.createElement('span', { className: `inline-flex items-center rounded-full border px-2.5 py-1 text-xs ${tones[tone]}` }, children);
-    }
-
-    function Card({ title, value, change }) {
-      return React.createElement('div', { className: 'rounded-2xl border border-white/10 bg-zinc-900/80 p-4 shadow-xl' },
-        React.createElement('p', { className: 'text-xs uppercase tracking-wide text-zinc-400' }, title),
-        React.createElement('p', { className: 'mt-2 text-2xl font-semibold text-white' }, value),
-        React.createElement('p', { className: 'mt-1 text-sm text-emerald-400' }, change)
-      );
-    }
-
-    function SectionCard({ title, subtitle, right, children }) {
-      return React.createElement('div', { className: 'rounded-2xl border border-white/10 bg-zinc-900/80 p-4 shadow-xl' },
-        React.createElement('div', { className: 'mb-4 flex items-start justify-between gap-3' },
-          React.createElement('div', null,
-            React.createElement('h3', { className: 'text-base font-semibold text-white' }, title),
-            subtitle ? React.createElement('p', { className: 'text-sm text-zinc-400' }, subtitle) : null
-          ),
-          right || null
-        ),
-        children
-      );
-    }
-
-    function App() {
-      const [activeTab, setActiveTab] = useState('overview');
-      const [loading, setLoading] = useState(true);
-      const [error, setError] = useState('');
-      const [summary, setSummary] = useState(null);
-      const [events, setEvents] = useState([]);
-      const [clientsData, setClientsData] = useState([]);
-      const [liveMode, setLiveMode] = useState('NORMAL');
-      const [search, setSearch] = useState('');
-
-      async function fetchAll() {
-        if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('COLE_AQUI')) {
-          setLoading(false);
-          setError('Defina a URL do Apps Script para usar dados reais.');
-          return;
-        }
-        try {
-          setLoading(true);
-          setError('');
-          const [summaryRes, eventsRes, clientsRes, modeRes] = await Promise.all([
-            fetch(`${APPS_SCRIPT_URL}?view=summary`).then((r) => r.text()),
-            fetch(`${APPS_SCRIPT_URL}?view=events`).then((r) => r.text()),
-            fetch(`${APPS_SCRIPT_URL}?view=clients`).then((r) => r.text()),
-            fetch(`${APPS_SCRIPT_URL}?view=mode`).then((r) => r.text()),
-          ]);
-          setSummary(parseMaybeJson(summaryRes));
-          const parsedEvents = parseMaybeJson(eventsRes);
-          const parsedClients = parseMaybeJson(clientsRes);
-          const parsedMode = parseMaybeJson(modeRes);
-          setEvents(Array.isArray(parsedEvents) ? normalizeEvents(parsedEvents) : []);
-          setClientsData(Array.isArray(parsedClients) ? normalizeClients(parsedClients) : []);
-          setLiveMode(typeof parsedMode === 'string' ? parsedMode : (parsedMode?.mode || 'NORMAL'));
-        } catch (e) {
-          setError('Não foi possível carregar o Apps Script.');
-        } finally {
-          setLoading(false);
-        }
+        renderAll();
+        setStatus("ok", "Apps Script sincronizado com sucesso.");
+      } catch (e) {
+        renderAll();
+        setStatus("error", "Não foi possível carregar o Apps Script. Exibindo dados locais.");
       }
-
-      useEffect(() => { fetchAll(); }, []);
-
-      const summaryCards = buildSummaryCards(summary);
-      const recentEvents = events.length ? events : fallbackRecentEvents;
-      const liveClients = clientsData.length ? clientsData : fallbackClients;
-      const filteredClients = useMemo(() => {
-        const term = search.toLowerCase();
-        return liveClients.filter((c) => c.name.toLowerCase().includes(term) || c.account.includes(term) || c.asset.toLowerCase().includes(term));
-      }, [search, liveClients]);
-
-      return React.createElement('div', { className: 'min-h-screen bg-black text-white' },
-        React.createElement('div', { className: 'mx-auto max-w-7xl p-4 md:p-6' },
-          React.createElement('div', { className: 'mb-6 rounded-[28px] border border-white/10 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-5 shadow-2xl' },
-            React.createElement('div', { className: 'flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between' },
-              React.createElement('div', null,
-                React.createElement('div', { className: 'mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300' }, 'Online e sincronizado'),
-                React.createElement('h1', { className: 'text-2xl font-semibold md:text-4xl' }, 'Dashboard HADASSA IA'),
-                React.createElement('p', { className: 'mt-2 max-w-2xl text-sm text-zinc-400 md:text-base' }, 'Centro operacional profissional para clientes, contas, licenças, performance, filtros inteligentes e regime de mercado.')
-              ),
-              React.createElement('div', { className: 'grid grid-cols-2 gap-3 md:grid-cols-4' },
-                React.createElement('div', { className: 'rounded-2xl border border-white/10 bg-white/5 p-3' }, React.createElement('div', { className: 'text-zinc-400' }, 'FLT02'), React.createElement('p', { className: 'mt-2 font-semibold' }, `AUTO / ${liveMode}`)),
-                React.createElement('div', { className: 'rounded-2xl border border-white/10 bg-white/5 p-3' }, React.createElement('div', { className: 'text-zinc-400' }, 'Ativo foco'), React.createElement('p', { className: 'mt-2 font-semibold' }, 'XAUUSD M1')),
-                React.createElement('div', { className: 'rounded-2xl border border-white/10 bg-white/5 p-3' }, React.createElement('div', { className: 'text-zinc-400' }, 'Regime'), React.createElement('p', { className: 'mt-2 font-semibold' }, 'Tendência')),
-                React.createElement('div', { className: 'rounded-2xl border border-white/10 bg-white/5 p-3' }, React.createElement('div', { className: 'text-zinc-400' }, 'Última sync'), React.createElement('p', { className: 'mt-2 font-semibold' }, 'Agora')),
-              )
-            )
-          ),
-
-          React.createElement('div', { className: 'mb-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300' },
-            React.createElement('div', { className: 'flex items-center gap-3' },
-              React.createElement(Badge, { tone: error ? 'red' : loading ? 'yellow' : 'green' }, error ? 'Sem conexão' : loading ? 'Carregando' : 'Conectado'),
-              React.createElement('span', null, error || 'Apps Script sincronizado com sucesso.')
-            ),
-            React.createElement('button', { onClick: fetchAll, className: 'rounded-2xl border border-white/10 bg-white/5 px-4 py-2 hover:bg-white/10' }, 'Recarregar dados')
-          ),
-
-          React.createElement('div', { className: 'mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between' },
-            React.createElement('div', { className: 'flex flex-wrap gap-2' },
-              [
-                ['overview', 'Visão Geral'],
-                ['admin', 'Admin'],
-                ['clients', 'Clientes'],
-                ['events', 'Eventos'],
-              ].map(([id, label]) => React.createElement('button', {
-                key: id,
-                onClick: () => setActiveTab(id),
-                className: `rounded-2xl border px-4 py-2 text-sm ${activeTab === id ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10'}`
-              }, label))
-            ),
-            React.createElement('button', { onClick: fetchAll, className: 'rounded-2xl border border-white/10 bg-white/5 px-4 py-2 hover:bg-white/10' }, 'Atualizar')
-          ),
-
-          activeTab === 'overview' && React.createElement('div', { className: 'space-y-4' },
-            React.createElement('div', { className: 'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3' },
-              summaryCards.map((item) => React.createElement(Card, { key: item.title, ...item }))
-            ),
-            React.createElement('div', { className: 'grid grid-cols-1 gap-4 xl:grid-cols-3' },
-              React.createElement(SectionCard, { title: 'Curva de Resultado', subtitle: 'Evolução semanal consolidada', right: React.createElement(Badge, { tone: 'green' }, liveMode) },
-                React.createElement('div', { className: 'h-72' },
-                  React.createElement(ResponsiveContainer, { width: '100%', height: '100%' },
-                    React.createElement(AreaChart, { data: equityData },
-                      React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#27272a' }),
-                      React.createElement(XAxis, { dataKey: 'name', stroke: '#a1a1aa' }),
-                      React.createElement(YAxis, { stroke: '#a1a1aa' }),
-                      React.createElement(Tooltip, null),
-                      React.createElement(Area, { type: 'monotone', dataKey: 'value', stroke: '#22c55e', fill: '#22c55e22' })
-                    )
-                  )
-                )
-              ),
-              React.createElement(SectionCard, { title: 'Performance por Ativo', subtitle: 'Takes x Stops por símbolo' },
-                React.createElement('div', { className: 'h-72' },
-                  React.createElement(ResponsiveContainer, { width: '100%', height: '100%' },
-                    React.createElement(BarChart, { data: assetsData },
-                      React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#27272a' }),
-                      React.createElement(XAxis, { dataKey: 'name', stroke: '#a1a1aa' }),
-                      React.createElement(YAxis, { stroke: '#a1a1aa' }),
-                      React.createElement(Tooltip, null),
-                      React.createElement(Bar, { dataKey: 'takes', fill: '#22c55e', radius: [6,6,0,0] }),
-                      React.createElement(Bar, { dataKey: 'stops', fill: '#ef4444', radius: [6,6,0,0] })
-                    )
-                  )
-                )
-              ),
-              React.createElement(SectionCard, { title: 'Sessões Mais Lucrativas', subtitle: 'Participação por janela de operação' },
-                React.createElement('div', { className: 'h-72' },
-                  React.createElement(ResponsiveContainer, { width: '100%', height: '100%' },
-                    React.createElement(PieChart, null,
-                      React.createElement(Pie, { data: sessionData, dataKey: 'value', nameKey: 'name', innerRadius: 55, outerRadius: 88, paddingAngle: 3 },
-                        sessionData.map((_, idx) => React.createElement(Cell, { key: idx, fill: colorPool[idx % colorPool.length] }))
-                      ),
-                      React.createElement(Tooltip, null)
-                    )
-                  )
-                )
-              )
-            ),
-            React.createElement('div', { className: 'grid grid-cols-1 gap-4 xl:grid-cols-2' },
-              React.createElement(SectionCard, { title: 'Regime de Mercado', subtitle: 'Leitura atual do FLT04 PRO' },
-                React.createElement('div', { className: 'h-72' },
-                  React.createElement(ResponsiveContainer, { width: '100%', height: '100%' },
-                    React.createElement(LineChart, { data: regimeData },
-                      React.createElement(CartesianGrid, { strokeDasharray: '3 3', stroke: '#27272a' }),
-                      React.createElement(XAxis, { dataKey: 'name', stroke: '#a1a1aa' }),
-                      React.createElement(YAxis, { stroke: '#a1a1aa' }),
-                      React.createElement(Tooltip, null),
-                      React.createElement(Line, { type: 'monotone', dataKey: 'value', stroke: '#3b82f6', strokeWidth: 3 })
-                    )
-                  )
-                )
-              ),
-              React.createElement(SectionCard, { title: 'Eventos Recentes', subtitle: 'Fluxo em tempo real do MT5' },
-                React.createElement('div', { className: 'space-y-3' },
-                  recentEvents.map((item) => React.createElement('div', { key: `${item.time}-${item.account}-${item.event}`, className: 'rounded-2xl border border-white/10 bg-white/5 p-3' },
-                    React.createElement('div', { className: 'flex items-center justify-between gap-3' },
-                      React.createElement('div', null,
-                        React.createElement('div', { className: 'flex items-center gap-2' },
-                          React.createElement('p', { className: 'text-sm font-medium text-white' }, item.event),
-                          React.createElement(Badge, { tone: 'blue' }, item.symbol)
-                        ),
-                        React.createElement('p', { className: 'text-xs text-zinc-400' }, `${item.time} · Conta ${item.account}`),
-                        React.createElement('p', { className: 'mt-1 text-sm text-zinc-300' }, item.detail)
-                      ),
-                      React.createElement('p', { className: 'text-sm font-semibold text-white' }, item.result)
-                    )
-                  ))
-                )
-              )
-            )
-          ),
-
-          activeTab === 'admin' && React.createElement('div', { className: 'grid grid-cols-1 gap-4 xl:grid-cols-3' },
-            React.createElement(SectionCard, { title: 'Controle Global', subtitle: 'Leitura central do ecossistema HADASSA' },
-              React.createElement('div', { className: 'space-y-3 text-sm text-zinc-300' },
-                React.createElement('div', { className: 'flex items-center justify-between rounded-2xl bg-white/5 p-3' }, React.createElement('span', null, 'Modo recomendado'), React.createElement(Badge, { tone: 'blue' }, liveMode)),
-                React.createElement('div', { className: 'flex items-center justify-between rounded-2xl bg-white/5 p-3' }, React.createElement('span', null, 'FLT04'), React.createElement(Badge, { tone: 'green' }, 'PRO COMPLETO')),
-                React.createElement('div', { className: 'flex items-center justify-between rounded-2xl bg-white/5 p-3' }, React.createElement('span', null, 'Clientes online'), React.createElement('span', { className: 'font-semibold text-white' }, '24'))
-              )
-            ),
-            React.createElement(SectionCard, { title: 'Ações Administrativas', subtitle: 'Base para conexão com Apps Script' },
-              React.createElement('div', { className: 'grid grid-cols-1 gap-3' },
-                ['Atualizar Dashboard', 'Sincronizar Modos', 'Exportar Resumo', 'Verificar Bots'].map((label) => React.createElement('button', { key: label, className: 'rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-zinc-200 transition hover:bg-white/10' }, label))
-              )
-            ),
-            React.createElement(SectionCard, { title: 'Integração Apps Script', subtitle: 'Pronto para conectar com endpoints reais' },
-              React.createElement('div', { className: 'space-y-3 text-sm' },
-                React.createElement('div', { className: 'rounded-2xl bg-zinc-950 p-3 text-zinc-300' }, React.createElement('p', { className: 'text-xs uppercase tracking-wide text-zinc-500' }, 'Endpoint eventos'), React.createElement('p', { className: 'mt-1 break-all text-zinc-200' }, 'POST /exec')),
-                React.createElement('div', { className: 'rounded-2xl bg-zinc-950 p-3 text-zinc-300' }, React.createElement('p', { className: 'text-xs uppercase tracking-wide text-zinc-500' }, 'Endpoint modo'), React.createElement('p', { className: 'mt-1 break-all text-zinc-200' }, 'GET /exec?conta=...&ativo=...&tf=...'))
-              )
-            )
-          ),
-
-          activeTab === 'clients' && React.createElement(SectionCard, {
-            title: 'Clientes e Contas',
-            subtitle: 'Visão individual por conta operando o robô',
-            right: React.createElement('div', { className: 'flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300' },
-              React.createElement('span', null, 'Buscar'),
-              React.createElement('input', {
-                value: search,
-                onChange: (e) => setSearch(e.target.value),
-                placeholder: 'cliente, conta ou ativo',
-                className: 'w-48 bg-transparent outline-none placeholder:text-zinc-500'
-              })
-            )
-          },
-            React.createElement('div', { className: 'overflow-x-auto' },
-              React.createElement('table', { className: 'min-w-full text-left text-sm' },
-                React.createElement('thead', { className: 'text-zinc-400' },
-                  React.createElement('tr', { className: 'border-b border-white/10' },
-                    ['Cliente','Conta','Ativo','TF','Modo','PnL','Licença','Bot'].map((h) => React.createElement('th', { key: h, className: 'px-3 py-3 font-medium' }, h))
-                  )
-                ),
-                React.createElement('tbody', null,
-                  filteredClients.map((item) => React.createElement('tr', { key: item.id, className: 'border-b border-white/5 text-zinc-200' },
-                    React.createElement('td', { className: 'px-3 py-3' }, React.createElement('div', null, React.createElement('p', { className: 'font-medium text-white' }, item.name), React.createElement('p', { className: 'text-xs text-zinc-500' }, item.id))),
-                    React.createElement('td', { className: 'px-3 py-3' }, item.account),
-                    React.createElement('td', { className: 'px-3 py-3' }, item.asset),
-                    React.createElement('td', { className: 'px-3 py-3' }, item.timeframe),
-                    React.createElement('td', { className: 'px-3 py-3' }, React.createElement(Badge, { tone: 'blue' }, item.mode)),
-                    React.createElement('td', { className: 'px-3 py-3' }, item.pnl),
-                    React.createElement('td', { className: 'px-3 py-3' }, React.createElement(Badge, { tone: item.license === 'ATIVA' ? 'green' : 'yellow' }, item.license)),
-                    React.createElement('td', { className: 'px-3 py-3' }, React.createElement(Badge, { tone: item.bot === 'ONLINE' ? 'green' : 'red' }, item.bot))
-                  ))
-                )
-              )
-            )
-          ),
-
-          activeTab === 'events' && React.createElement(SectionCard, { title: 'Feed de Eventos', subtitle: 'Base para monitoramento operacional em tempo real' },
-            React.createElement('div', { className: 'grid grid-cols-1 gap-3 lg:grid-cols-2' },
-              recentEvents.map((item) => React.createElement('div', { key: `${item.time}-${item.account}`, className: 'rounded-2xl border border-white/10 bg-white/5 p-4' },
-                React.createElement('div', { className: 'mb-2 flex items-center justify-between gap-3' }, React.createElement(Badge, { tone: 'blue' }, item.event), React.createElement('span', { className: 'text-xs text-zinc-500' }, item.time)),
-                React.createElement('p', { className: 'text-sm font-semibold text-white' }, item.symbol),
-                React.createElement('p', { className: 'text-sm text-zinc-300' }, item.detail),
-                React.createElement('p', { className: 'mt-2 text-xs text-zinc-500' }, `Conta ${item.account}`),
-                React.createElement('p', { className: 'mt-3 text-sm font-semibold text-white' }, item.result)
-              ))
-            )
-          )
-        )
-      );
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+    function renderAll() {
+      renderSummaryCards();
+      renderEvents();
+      renderClients();
+      buildCharts();
+      applyHero();
+    }
+
+    document.querySelectorAll(".tabBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tabBtn").forEach(b => {
+          b.className = "tabBtn rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300";
+        });
+        btn.className = "tabBtn rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300";
+        const tab = btn.dataset.tab;
+        document.querySelectorAll(".tabContent").forEach(el => el.classList.add("hidden"));
+        document.getElementById(`tab-${tab}`).classList.remove("hidden");
+      });
+    });
+
+    document.getElementById("btnRefresh").addEventListener("click", loadData);
+    document.getElementById("clientSearch").addEventListener("input", renderClients);
+
+    renderAll();
+    loadData();
   </script>
 </body>
 </html>
