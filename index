@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard HADASSA IA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #030712; }
+    .card { background: rgba(24,24,27,.9); border: 1px solid rgba(255,255,255,.08); }
+    .muted { color: #a1a1aa; }
+    .grid-auto { display:grid; gap:1rem; }
+    @media (min-width: 768px) { .grid-2 { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (min-width: 1280px) { .grid-3 { grid-template-columns: repeat(3,minmax(0,1fr)); } .grid-2-xl { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+  </style>
+</head>
+<body class="text-white">
+  <div class="mx-auto max-w-7xl p-4 md:p-6">
+    <section class="mb-6 rounded-[28px] border border-white/10 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 p-5 shadow-2xl">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div class="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300">
+            Online e sincronizado
+          </div>
+          <h1 class="text-2xl font-semibold md:text-4xl">Dashboard HADASSA IA</h1>
+          <p class="mt-2 max-w-2xl text-sm text-zinc-400 md:text-base">
+            Centro operacional para clientes, contas, licenças, performance, filtros inteligentes e regime de mercado.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="muted text-sm">FLT02</div>
+            <p id="heroMode" class="mt-2 font-semibold">AUTO / NORMAL</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="muted text-sm">Ativo foco</div>
+            <p id="heroAsset" class="mt-2 font-semibold">XAUUSD M1</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="muted text-sm">Regime</div>
+            <p id="heroRegime" class="mt-2 font-semibold">Tendência</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div class="muted text-sm">Última sync</div>
+            <p id="heroSync" class="mt-2 font-semibold">Agora</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-zinc-300">
+      <div class="grid gap-3 lg:grid-cols-[1.4fr,1fr] lg:items-end">
+        <div>
+          <p class="mb-2 text-sm font-medium text-white">Acesso individual do cliente</p>
+          <p class="text-zinc-400">Use licença e conta para filtrar os dados do dashboard ou compartilhe um link direto com esses parâmetros.</p>
+        </div>
+        <div class="grid gap-2 md:grid-cols-3">
+          <input id="inputLicenca" placeholder="Licença" class="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-500" />
+          <input id="inputConta" placeholder="Conta MT5" class="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-500" />
+          <button id="btnEntrarCliente" class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300 hover:bg-emerald-500/15">Entrar no painel</button>
+        </div>
+      </div>
+      <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+        <span>Exemplo de link individual:</span>
+        <code id="clientLinkExample" class="rounded-lg bg-zinc-950 px-2 py-1 text-zinc-300"></code>
+      </div>
+    </section>
+
+    <section class="mb-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex items-center gap-3">
+        <span id="statusBadge" class="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">Conectando</span>
+        <span id="statusText">Preparando dashboard...</span>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnRefresh" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 hover:bg-white/10">Atualizar</button>
+      </div>
+    </section>
+
+    <section class="mb-6 flex flex-wrap gap-2">
+      <button class="tabBtn rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300" data-tab="overview">Visão Geral</button>
+      <button class="tabBtn rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300" data-tab="admin">Admin</button>
+      <button class="tabBtn rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300" data-tab="clients">Clientes</button>
+      <button class="tabBtn rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300" data-tab="events">Eventos</button>
+    </section>
+
+    <section id="tab-overview" class="tabContent space-y-4">
+      <div id="summaryCards" class="grid-auto md:grid-cols-2 xl:grid-cols-3"></div>
+
+      <div class="grid-auto xl:grid-cols-3">
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h3 class="text-base font-semibold text-white">Curva de Resultado</h3>
+              <p class="text-sm text-zinc-400">Evolução semanal consolidada</p>
+            </div>
+            <span id="modeBadge" class="inline-flex items-center rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-xs text-sky-300">NORMAL</span>
+          </div>
+          <div class="h-72"><canvas id="equityChart"></canvas></div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Performance por Ativo</h3>
+            <p class="text-sm text-zinc-400">Takes x Stops por símbolo</p>
+          </div>
+          <div class="h-72"><canvas id="assetChart"></canvas></div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Sessões Mais Lucrativas</h3>
+            <p class="text-sm text-zinc-400">Participação por janela de operação</p>
+          </div>
+          <div class="h-72"><canvas id="sessionChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-auto xl:grid-cols-2">
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Regime de Mercado</h3>
+            <p class="text-sm text-zinc-400">Leitura atual do FLT04 PRO</p>
+          </div>
+          <div class="h-72"><canvas id="regimeChart"></canvas></div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Eventos Recentes</h3>
+            <p class="text-sm text-zinc-400">Fluxo em tempo real do MT5</p>
+          </div>
+          <div id="recentEvents" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-admin" class="tabContent hidden">
+      <div class="grid-auto xl:grid-cols-3">
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Controle Global</h3>
+            <p class="text-sm text-zinc-400">Leitura central do ecossistema HADASSA</p>
+          </div>
+          <div class="space-y-3 text-sm text-zinc-300">
+            <div class="flex items-center justify-between rounded-2xl bg-white/5 p-3"><span>Modo recomendado</span><span id="adminMode" class="rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-1 text-xs text-sky-300">NORMAL</span></div>
+            <div class="flex items-center justify-between rounded-2xl bg-white/5 p-3"><span>FLT04</span><span class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300">PRO COMPLETO</span></div>
+            <div class="flex items-center justify-between rounded-2xl bg-white/5 p-3"><span>Clientes online</span><span id="adminClientsOnline" class="font-semibold text-white">0</span></div>
+            <div class="flex items-center justify-between rounded-2xl bg-white/5 p-3"><span>Licenças OK</span><span id="adminLicencas" class="font-semibold text-white">0</span></div>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Ações Administrativas</h3>
+            <p class="text-sm text-zinc-400">Base para conexão com Apps Script</p>
+          </div>
+          <div class="grid gap-3">
+            <button class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-zinc-200 hover:bg-white/10">Atualizar Dashboard</button>
+            <button class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-zinc-200 hover:bg-white/10">Sincronizar Modos</button>
+            <button class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-zinc-200 hover:bg-white/10">Exportar Resumo</button>
+            <button class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-zinc-200 hover:bg-white/10">Verificar Bots</button>
+          </div>
+        </div>
+
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Integração Apps Script</h3>
+            <p class="text-sm text-zinc-400">Endpoints do dashboard</p>
+          </div>
+          <div class="space-y-3 text-sm">
+            <div class="rounded-2xl bg-zinc-950 p-3 text-zinc-300">
+              <p class="text-xs uppercase tracking-wide text-zinc-500">URL base</p>
+              <p class="mt-1 break-all text-zinc-200" id="appsScriptUrlText"></p>
+            </div>
+            <div class="rounded-2xl bg-zinc-950 p-3 text-zinc-300">
+              <p class="text-xs uppercase tracking-wide text-zinc-500">Resumo</p>
+              <p class="mt-1 break-all text-zinc-200">?view=summary</p>
+            </div>
+            <div class="rounded-2xl bg-zinc-950 p-3 text-zinc-300">
+              <p class="text-xs uppercase tracking-wide text-zinc-500">Clientes / Eventos / Modo</p>
+              <p class="mt-1 break-all text-zinc-200">?view=clients | ?view=events | ?view=mode</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-clients" class="tabContent hidden">
+      <div class="card rounded-2xl p-4 shadow-xl">
+        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h3 class="text-base font-semibold text-white">Clientes e Contas</h3>
+            <p class="text-sm text-zinc-400">Visão individual por conta operando o robô</p>
+          </div>
+          <input id="clientSearch" placeholder="Buscar cliente, conta ou ativo" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-500" />
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left text-sm">
+            <thead class="text-zinc-400">
+              <tr class="border-b border-white/10">
+                <th class="px-3 py-3 font-medium">Cliente</th>
+                <th class="px-3 py-3 font-medium">Conta</th>
+                <th class="px-3 py-3 font-medium">Ativo</th>
+                <th class="px-3 py-3 font-medium">TF</th>
+                <th class="px-3 py-3 font-medium">Modo</th>
+                <th class="px-3 py-3 font-medium">PnL</th>
+                <th class="px-3 py-3 font-medium">Licença</th>
+                <th class="px-3 py-3 font-medium">Bot</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTable" class="text-zinc-200"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-events" class="tabContent hidden">
+      <div class="card rounded-2xl p-4 shadow-xl">
+        <div class="mb-4">
+          <h3 class="text-base font-semibold text-white">Feed de Eventos</h3>
+          <p class="text-sm text-zinc-400">Base para monitoramento operacional em tempo real</p>
+        </div>
+        <div id="eventsGrid" class="grid gap-3 lg:grid-cols-2"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2Ej67k0iDsfXFbNeWIDa-4VvV5eZXn_QwS7bOAm40Fb-tU3oKaqMCdgd2mHjI0S_K/exec";
+    let activeLicenca = "";
+    let activeConta = "";
+
+    const fallbackSummary = {
+      lucroDia: 1284.4,
+      operacoesDia: 14,
+      winRate: 68.4,
+      wins: 42,
+      winsHoje: 8,
+      stops: 19,
+      stopsHoje: 2,
+      clientesAtivos: 27,
+      botsOnline: 24,
+      licencasOk: 31,
+      expiramHoje: 2,
+    };
+
+    const fallbackEvents = [
+      { time: "19:08", conta: "510051524", evento: "TAKE", ativo: "XAUUSD", detalhe: "FLT02 NORMAL | FLT04 PRO", resultado_financeiro: 74.2 },
+      { time: "19:02", conta: "510051525", evento: "NOVO_CICLO", ativo: "BTCUSD", detalhe: "Sessão automática iniciada", resultado_financeiro: 0 },
+      { time: "18:57", conta: "510051524", evento: "FILTRO_FLT04", ativo: "XAUUSD", detalhe: "Range detectado, entrada bloqueada", resultado_financeiro: 0 },
+      { time: "18:51", conta: "510051526", evento: "STOP", ativo: "USDJPY", detalhe: "TooDeep limit expirou", resultado_financeiro: -22.9 },
+    ];
+
+    const fallbackClients = [
+      { id: "CLI-001", nome: "Feliphe Israel", conta: "510051524", ativo: "XAUUSD", tf: "M1", modo: "NORMAL", resultado: 384.22, licenca: "ATIVA", status: "ONLINE" },
+      { id: "CLI-002", nome: "Mesa Alpha", conta: "510051525", ativo: "BTCUSD", tf: "M1", modo: "AGRESSIVO", resultado: 191.4, licenca: "ATIVA", status: "ONLINE" },
+      { id: "CLI-003", nome: "Conta Teste", conta: "510051526", ativo: "USDJPY", tf: "M5", modo: "CONSERVADOR", resultado: -42.1, licenca: "EXPIRA HOJE", status: "OFFLINE" },
+    ];
+
+    const fallbackMode = "NORMAL";
+    const sessionData = [46, 34, 12, 8];
+    const sessionLabels = ["Londres", "NY", "Ásia", "Hora extra"];
+    const regimeData = [61, 24, 15];
+    const regimeLabels = ["Tendência", "Range", "Transição"];
+
+    let state = {
+      summary: fallbackSummary,
+      events: fallbackEvents,
+      clients: fallbackClients,
+      mode: fallbackMode,
+    };
+
+    let charts = {};
+
+    function formatMoney(value) {
+      const num = Number(value || 0);
+      return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(num);
+    }
+
+    function badgeHtml(text, tone = "blue") {
+      const tones = {
+        blue: "border-sky-500/20 bg-sky-500/10 text-sky-300",
+        green: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+        yellow: "border-amber-500/20 bg-amber-500/10 text-amber-300",
+        red: "border-rose-500/20 bg-rose-500/10 text-rose-300",
+        gray: "border-white/10 bg-white/5 text-zinc-200",
+      };
+      return `<span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs ${tones[tone] || tones.gray}">${text}</span>`;
+    }
+
+    function getUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        licenca: (params.get("licenca") || "").trim(),
+        conta: (params.get("conta") || "").trim(),
+      };
+    }
+
+    function buildQuery(extra = {}) {
+      const params = new URLSearchParams();
+      if (activeLicenca) params.set("licenca", activeLicenca);
+      if (activeConta) params.set("conta", activeConta);
+      Object.keys(extra).forEach((key) => {
+        if (extra[key] !== undefined && extra[key] !== null && extra[key] !== "") {
+          params.set(key, extra[key]);
+        }
+      });
+      return params.toString();
+    }
+
+    function updateClientLinkExample() {
+      const base = `${window.location.origin}${window.location.pathname}`;
+      const params = new URLSearchParams();
+      if (activeLicenca) params.set("licenca", activeLicenca);
+      if (activeConta) params.set("conta", activeConta);
+      document.getElementById("clientLinkExample").textContent = params.toString() ? `${base}?${params.toString()}` : `${base}?licenca=216456&conta=510051524`;
+    }
+
+    function applyClientInputs() {
+      document.getElementById("inputLicenca").value = activeLicenca;
+      document.getElementById("inputConta").value = activeConta;
+      updateClientLinkExample();
+    }
+
+    function setStatus(kind, text) {
+      const badge = document.getElementById("statusBadge");
+      const statusText = document.getElementById("statusText");
+      badge.className = "inline-flex items-center rounded-full border px-2.5 py-1 text-xs";
+      if (kind === "ok") {
+        badge.classList.add("border-emerald-500/20", "bg-emerald-500/10", "text-emerald-300");
+        badge.textContent = "Conectado";
+      } else if (kind === "warn") {
+        badge.classList.add("border-amber-500/20", "bg-amber-500/10", "text-amber-300");
+        badge.textContent = "Parcial";
+      } else {
+        badge.classList.add("border-rose-500/20", "bg-rose-500/10", "text-rose-300");
+        badge.textContent = "Sem conexão";
+      }
+      statusText.textContent = text;
+    }
+
+    function renderSummaryCards() {
+      const cards = [
+        { title: "Lucro do Dia", value: formatMoney(state.summary.lucroDia), change: `${state.summary.operacoesDia || 0} ops` },
+        { title: "Win Rate", value: `${state.summary.winRate || 0}%`, change: `${state.summary.wins || 0} takes` },
+        { title: "Takes", value: String(state.summary.wins || 0), change: `${state.summary.winsHoje || 0} hoje` },
+        { title: "Stops", value: String(state.summary.stops || 0), change: `${state.summary.stopsHoje || 0} hoje` },
+        { title: "Clientes Ativos", value: String(state.summary.clientesAtivos || 0), change: `${state.summary.botsOnline || 0} online` },
+        { title: "Licenças OK", value: String(state.summary.licencasOk || 0), change: `${state.summary.expiramHoje || 0} expiram hoje` },
+      ];
+
+      document.getElementById("summaryCards").innerHTML = cards.map(item => `
+        <div class="card rounded-2xl p-4 shadow-xl">
+          <p class="text-xs uppercase tracking-wide text-zinc-400">${item.title}</p>
+          <p class="mt-2 text-2xl font-semibold text-white">${item.value}</p>
+          <p class="mt-1 text-sm text-emerald-400">${item.change}</p>
+        </div>
+      `).join("");
+    }
+
+    function renderEvents() {
+      const recent = state.events.slice(0, 20);
+      document.getElementById("recentEvents").innerHTML = recent.map(item => `
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-medium text-white">${item.evento || item.event || "EVENTO"}</p>
+                ${badgeHtml(item.ativo || item.symbol || "", "blue")}
+              </div>
+              <p class="text-xs text-zinc-400">${item.time || "--:--"} · Conta ${item.conta || item.account || ""}</p>
+              <p class="mt-1 text-sm text-zinc-300">${item.detalhe || item.detail || "Sem detalhe"}</p>
+            </div>
+            <p class="text-sm font-semibold text-white">${formatMoney(item.resultado_financeiro || item.result || 0)}</p>
+          </div>
+        </div>
+      `).join("");
+
+      document.getElementById("eventsGrid").innerHTML = recent.map(item => `
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div class="mb-2 flex items-center justify-between gap-3">
+            ${badgeHtml(item.evento || item.event || "EVENTO", "blue")}
+            <span class="text-xs text-zinc-500">${item.time || "--:--"}</span>
+          </div>
+          <p class="text-sm font-semibold text-white">${item.ativo || item.symbol || ""}</p>
+          <p class="text-sm text-zinc-300">${item.detalhe || item.detail || "Sem detalhe"}</p>
+          <p class="mt-2 text-xs text-zinc-500">Conta ${item.conta || item.account || ""}</p>
+          <p class="mt-3 text-sm font-semibold text-white">${formatMoney(item.resultado_financeiro || item.result || 0)}</p>
+        </div>
+      `).join("");
+    }
+
+    function renderClients() {
+      const term = (document.getElementById("clientSearch").value || "").toLowerCase();
+      const filtered = state.clients.filter(c =>
+        String(c.nome || c.name || "").toLowerCase().includes(term) ||
+        String(c.conta || c.account || "").includes(term) ||
+        String(c.ativo || c.asset || "").toLowerCase().includes(term)
+      );
+
+      document.getElementById("clientsTable").innerHTML = filtered.map((c, idx) => `
+        <tr class="border-b border-white/5 text-zinc-200">
+          <td class="px-3 py-3">
+            <div>
+              <p class="font-medium text-white">${c.nome || c.name || "Cliente"}</p>
+              <p class="text-xs text-zinc-500">${c.id || `CLI-${String(idx+1).padStart(3, "0")}`}</p>
+            </div>
+          </td>
+          <td class="px-3 py-3">${c.conta || c.account || ""}</td>
+          <td class="px-3 py-3">${c.ativo || c.asset || ""}</td>
+          <td class="px-3 py-3">${c.tf || c.timeframe || ""}</td>
+          <td class="px-3 py-3">${badgeHtml(c.modo || c.mode || "NORMAL", "blue")}</td>
+          <td class="px-3 py-3">${formatMoney(c.resultado || c.pnl || 0)}</td>
+          <td class="px-3 py-3">${badgeHtml(c.licenca || c.license || "ATIVA", (c.licenca || c.license) === "ATIVA" ? "green" : "yellow")}</td>
+          <td class="px-3 py-3">${badgeHtml(c.status || c.bot || "ONLINE", (c.status || c.bot) === "ONLINE" ? "green" : "red")}</td>
+        </tr>
+      `).join("");
+    }
+
+    function buildCharts() {
+      const takes = {};
+      const stops = {};
+      state.events.forEach(e => {
+        const ativo = e.ativo || e.symbol || "OUTRO";
+        const evento = String(e.evento || e.event || "").toUpperCase();
+        if (!(ativo in takes)) { takes[ativo] = 0; stops[ativo] = 0; }
+        if (evento === "TAKE") takes[ativo]++;
+        if (evento === "STOP") stops[ativo]++;
+      });
+      const assetLabels = Object.keys(takes).length ? Object.keys(takes) : ["XAUUSD","BTCUSD","USDJPY","EURUSD"];
+      const takesData = assetLabels.map(a => takes[a] || ({XAUUSD:18,BTCUSD:12,USDJPY:8,EURUSD:4}[a] || 0));
+      const stopsData = assetLabels.map(a => stops[a] || ({XAUUSD:7,BTCUSD:5,USDJPY:4,EURUSD:3}[a] || 0));
+
+      const weekly = [220,430,510,780,910,1200,Number(state.summary.lucroDia || 1284)];
+
+      if (charts.equity) charts.equity.destroy();
+      charts.equity = new Chart(document.getElementById("equityChart"), {
+        type: "line",
+        data: {
+          labels: ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"],
+          datasets: [{ label: "Resultado", data: weekly, borderColor: "#22c55e", backgroundColor: "rgba(34,197,94,.12)", fill: true, tension: .35 }]
+        },
+        options: darkOptions()
+      });
+
+      if (charts.asset) charts.asset.destroy();
+      charts.asset = new Chart(document.getElementById("assetChart"), {
+        type: "bar",
+        data: {
+          labels: assetLabels,
+          datasets: [
+            { label: "Takes", data: takesData, backgroundColor: "#22c55e" },
+            { label: "Stops", data: stopsData, backgroundColor: "#ef4444" }
+          ]
+        },
+        options: darkOptions()
+      });
+
+      if (charts.session) charts.session.destroy();
+      charts.session = new Chart(document.getElementById("sessionChart"), {
+        type: "doughnut",
+        data: {
+          labels: sessionLabels,
+          datasets: [{ data: sessionData, backgroundColor: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"] }]
+        },
+        options: darkOptions(true)
+      });
+
+      if (charts.regime) charts.regime.destroy();
+      charts.regime = new Chart(document.getElementById("regimeChart"), {
+        type: "line",
+        data: {
+          labels: regimeLabels,
+          datasets: [{ label: "Regime", data: regimeData, borderColor: "#3b82f6", backgroundColor: "rgba(59,130,246,.12)", fill: true, tension: .35 }]
+        },
+        options: darkOptions()
+      });
+    }
+
+    function darkOptions(radial = false) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: "#e4e4e7" } },
+          tooltip: { enabled: true }
+        },
+        scales: radial ? {} : {
+          x: { ticks: { color: "#a1a1aa" }, grid: { color: "rgba(255,255,255,.08)" } },
+          y: { ticks: { color: "#a1a1aa" }, grid: { color: "rgba(255,255,255,.08)" } }
+        }
+      };
+    }
+
+    function applyHero() {
+      document.getElementById("heroMode").textContent = `AUTO / ${state.mode}`;
+      document.getElementById("modeBadge").textContent = state.mode;
+      document.getElementById("adminMode").textContent = state.mode;
+      document.getElementById("heroSync").textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      document.getElementById("appsScriptUrlText").textContent = APPS_SCRIPT_URL;
+      document.getElementById("adminClientsOnline").textContent = state.summary.botsOnline || 0;
+      document.getElementById("adminLicencas").textContent = state.summary.licencasOk || 0;
+
+      const firstClient = state.clients[0];
+      if (firstClient) document.getElementById("heroAsset").textContent = `${firstClient.ativo || firstClient.asset || "XAUUSD"} ${firstClient.tf || firstClient.timeframe || "M1"}`;
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Falha na consulta");
+      const txt = await res.text();
+      try { return JSON.parse(txt); } catch { return txt; }
+    }
+
+    async function loadData() {
+      try {
+        setStatus("warn", "Carregando dados do Apps Script...");
+        const querySummary = buildQuery({ view: "summary" });
+        const queryEvents = buildQuery({ view: "events" });
+        const queryClients = buildQuery({ view: "clients" });
+        const queryMode = buildQuery({ view: "mode" });
+
+        const [summary, events, clients, mode] = await Promise.all([
+          fetchJson(`${APPS_SCRIPT_URL}?${querySummary}`),
+          fetchJson(`${APPS_SCRIPT_URL}?${queryEvents}`),
+          fetchJson(`${APPS_SCRIPT_URL}?${queryClients}`),
+          fetchJson(`${APPS_SCRIPT_URL}?${queryMode}`),
+        ]);
+
+        if (summary && typeof summary === "object") state.summary = summary;
+        if (Array.isArray(events) && events.length) state.events = events;
+        if (Array.isArray(clients) && clients.length) state.clients = clients;
+        if (typeof mode === "string" && mode.trim()) state.mode = mode.trim();
+
+        renderAll();
+        setStatus("ok", "Apps Script sincronizado com sucesso.");
+      } catch (e) {
+        renderAll();
+        setStatus("error", "Não foi possível carregar o Apps Script. Exibindo dados locais.");
+      }
+    }
+
+    function renderAll() {
+      renderSummaryCards();
+      renderEvents();
+      renderClients();
+      buildCharts();
+      applyHero();
+    }
+
+    document.querySelectorAll(".tabBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tabBtn").forEach(b => {
+          b.className = "tabBtn rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300";
+        });
+        btn.className = "tabBtn rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300";
+        const tab = btn.dataset.tab;
+        document.querySelectorAll(".tabContent").forEach(el => el.classList.add("hidden"));
+        document.getElementById(`tab-${tab}`).classList.remove("hidden");
+      });
+    });
+
+    document.getElementById("btnRefresh").addEventListener("click", loadData);
+    document.getElementById("btnEntrarCliente").addEventListener("click", () => {
+      activeLicenca = (document.getElementById("inputLicenca").value || "").trim();
+      activeConta = (document.getElementById("inputConta").value || "").trim();
+      const params = new URLSearchParams();
+      if (activeLicenca) params.set("licenca", activeLicenca);
+      if (activeConta) params.set("conta", activeConta);
+      const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+      updateClientLinkExample();
+      loadData();
+    });
+    document.getElementById("clientSearch").addEventListener("input", renderClients);
+
+    const initialParams = getUrlParams();
+    activeLicenca = initialParams.licenca;
+    activeConta = initialParams.conta;
+    applyClientInputs();
+    renderAll();
+    loadData();
+  </script>
+</body>
+</html>
