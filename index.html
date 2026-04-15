@@ -50,6 +50,24 @@
       </div>
     </section>
 
+    <section class="mb-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-zinc-300">
+      <div class="grid gap-3 lg:grid-cols-[1.4fr,1fr] lg:items-end">
+        <div>
+          <p class="mb-2 text-sm font-medium text-white">Acesso individual do cliente</p>
+          <p class="text-zinc-400">Use licença e conta para filtrar os dados do dashboard ou compartilhe um link direto com esses parâmetros.</p>
+        </div>
+        <div class="grid gap-2 md:grid-cols-3">
+          <input id="inputLicenca" placeholder="Licença" class="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-500" />
+          <input id="inputConta" placeholder="Conta MT5" class="rounded-2xl border border-white/10 bg-zinc-950 px-4 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-500" />
+          <button id="btnEntrarCliente" class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-300 hover:bg-emerald-500/15">Entrar no painel</button>
+        </div>
+      </div>
+      <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+        <span>Exemplo de link individual:</span>
+        <code id="clientLinkExample" class="rounded-lg bg-zinc-950 px-2 py-1 text-zinc-300"></code>
+      </div>
+    </section>
+
     <section class="mb-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300 lg:flex-row lg:items-center lg:justify-between">
       <div class="flex items-center gap-3">
         <span id="statusBadge" class="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">Conectando</span>
@@ -211,6 +229,8 @@
 
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2Ej67k0iDsfXFbNeWIDa-4VvV5eZXn_QwS7bOAm40Fb-tU3oKaqMCdgd2mHjI0S_K/exec";
+    let activeLicenca = "";
+    let activeConta = "";
 
     const fallbackSummary = {
       lucroDia: 1284.4,
@@ -268,6 +288,40 @@
         gray: "border-white/10 bg-white/5 text-zinc-200",
       };
       return `<span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs ${tones[tone] || tones.gray}">${text}</span>`;
+    }
+
+    function getUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        licenca: (params.get("licenca") || "").trim(),
+        conta: (params.get("conta") || "").trim(),
+      };
+    }
+
+    function buildQuery(extra = {}) {
+      const params = new URLSearchParams();
+      if (activeLicenca) params.set("licenca", activeLicenca);
+      if (activeConta) params.set("conta", activeConta);
+      Object.keys(extra).forEach((key) => {
+        if (extra[key] !== undefined && extra[key] !== null && extra[key] !== "") {
+          params.set(key, extra[key]);
+        }
+      });
+      return params.toString();
+    }
+
+    function updateClientLinkExample() {
+      const base = `${window.location.origin}${window.location.pathname}`;
+      const params = new URLSearchParams();
+      if (activeLicenca) params.set("licenca", activeLicenca);
+      if (activeConta) params.set("conta", activeConta);
+      document.getElementById("clientLinkExample").textContent = params.toString() ? `${base}?${params.toString()}` : `${base}?licenca=216456&conta=510051524`;
+    }
+
+    function applyClientInputs() {
+      document.getElementById("inputLicenca").value = activeLicenca;
+      document.getElementById("inputConta").value = activeConta;
+      updateClientLinkExample();
     }
 
     function setStatus(kind, text) {
@@ -463,11 +517,16 @@
     async function loadData() {
       try {
         setStatus("warn", "Carregando dados do Apps Script...");
+        const querySummary = buildQuery({ view: "summary" });
+        const queryEvents = buildQuery({ view: "events" });
+        const queryClients = buildQuery({ view: "clients" });
+        const queryMode = buildQuery({ view: "mode" });
+
         const [summary, events, clients, mode] = await Promise.all([
-          fetchJson(`${APPS_SCRIPT_URL}?view=summary`),
-          fetchJson(`${APPS_SCRIPT_URL}?view=events`),
-          fetchJson(`${APPS_SCRIPT_URL}?view=clients`),
-          fetchJson(`${APPS_SCRIPT_URL}?view=mode`),
+          fetchJson(`${APPS_SCRIPT_URL}?${querySummary}`),
+          fetchJson(`${APPS_SCRIPT_URL}?${queryEvents}`),
+          fetchJson(`${APPS_SCRIPT_URL}?${queryClients}`),
+          fetchJson(`${APPS_SCRIPT_URL}?${queryMode}`),
         ]);
 
         if (summary && typeof summary === "object") state.summary = summary;
@@ -504,8 +563,23 @@
     });
 
     document.getElementById("btnRefresh").addEventListener("click", loadData);
+    document.getElementById("btnEntrarCliente").addEventListener("click", () => {
+      activeLicenca = (document.getElementById("inputLicenca").value || "").trim();
+      activeConta = (document.getElementById("inputConta").value || "").trim();
+      const params = new URLSearchParams();
+      if (activeLicenca) params.set("licenca", activeLicenca);
+      if (activeConta) params.set("conta", activeConta);
+      const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+      updateClientLinkExample();
+      loadData();
+    });
     document.getElementById("clientSearch").addEventListener("input", renderClients);
 
+    const initialParams = getUrlParams();
+    activeLicenca = initialParams.licenca;
+    activeConta = initialParams.conta;
+    applyClientInputs();
     renderAll();
     loadData();
   </script>
